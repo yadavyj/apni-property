@@ -47,7 +47,8 @@ export function buildPropertyWhatsAppLink(property, pageUrl, phone) {
     lines.push(`Property URL: ${pageUrl}`);
   }
 
-  return buildWhatsAppLink(lines.join("\n"), phone);
+  // Open WhatsApp share flow for contact selection instead of a fixed recipient chat.
+  return buildWhatsAppShareLink(lines.join("\n"));
 }
 
 export function buildGenericWhatsAppLink(phone) {
