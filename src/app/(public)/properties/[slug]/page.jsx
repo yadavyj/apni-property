@@ -55,7 +55,9 @@ export default async function PropertyDetailPage({ params, searchParams }) {
 
   if (!property) notFound();
 
-  const authPromise = createClient().then((supabase) => supabase.auth.getUser());
+  const authPromise = createClient().then((supabase) =>
+    supabase ? supabase.auth.getUser() : Promise.resolve({ data: { user: null } })
+  );
   const [referrerInfo, related, authResult, activeCycle, siteUrl] = await Promise.all([
     ref ? getReferrerByCode(ref) : null,
     getRelatedProperties(property, 3),

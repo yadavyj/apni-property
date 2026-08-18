@@ -17,6 +17,10 @@ export default function PublicAuthProvider({ children }) {
       if (!active) return;
 
       const supabase = createClient();
+      if (!supabase) {
+        return;
+      }
+
       clientRef.current = supabase;
 
       const { data } = await supabase.auth.getSession();
@@ -43,6 +47,10 @@ export default function PublicAuthProvider({ children }) {
       const { createClient } = await import("@/lib/supabase/client");
       supabase = createClient();
       clientRef.current = supabase;
+    }
+
+    if (!supabase) {
+      return;
     }
 
     const { error } = await supabase.auth.signOut();

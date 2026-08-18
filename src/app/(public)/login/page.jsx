@@ -23,6 +23,13 @@ export default function LoginPage() {
     setLoading(true);
 
     const supabase = createClient();
+    if (!supabase) {
+      setError("Authentication is not configured right now.");
+      toast.error("Authentication is not configured right now.");
+      setLoading(false);
+      return;
+    }
+
     const { error: signInError } = await supabase.auth.signInWithPassword({
       email,
       password,

@@ -10,6 +10,10 @@ const getCachedSiteSettings = unstable_cache(
   async function fetchSiteSettings() {
     const supabase = createPublicClient();
 
+    if (!supabase) {
+      return { ...BUSINESS };
+    }
+
     const { data, error } = await supabase
       .from("site_settings")
       .select("*")

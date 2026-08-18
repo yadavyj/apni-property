@@ -27,6 +27,9 @@ const getCachedActiveHomeBanners = unstable_cache(
   async function fetchActiveHomeBanners() {
     return withSupabaseTimeout(async () => {
       const supabase = createPublicClient();
+      if (!supabase) {
+        return [];
+      }
 
       const { data, error } = await supabase
         .from("home_banners")
@@ -58,6 +61,9 @@ export async function getActiveHomeBanners() {
 
 export async function getAllHomeBanners() {
   const supabase = createAdminClient();
+  if (!supabase) {
+    return [];
+  }
 
   const { data, error } = await supabase
     .from("home_banners")

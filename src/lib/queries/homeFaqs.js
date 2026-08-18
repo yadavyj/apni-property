@@ -6,6 +6,9 @@ const getCachedActiveHomeFaqs = unstable_cache(
   async function fetchActiveHomeFaqs() {
     return withSupabaseTimeout(async () => {
       const supabase = createPublicClient();
+      if (!supabase) {
+        return [];
+      }
 
       const { data, error } = await supabase
         .from("home_faqs")
@@ -33,6 +36,9 @@ export async function getActiveHomeFaqs() {
 
 export async function getAllHomeFaqs() {
   const supabase = createAdminClient();
+  if (!supabase) {
+    return [];
+  }
 
   const { data, error } = await supabase
     .from("home_faqs")

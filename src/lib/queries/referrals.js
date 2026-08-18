@@ -24,6 +24,9 @@ async function generateUniqueReferralCode(admin, attempts = 0) {
 
 export async function getOrCreateProfile(user) {
   const supabase = await createClient();
+  if (!supabase) {
+    return null;
+  }
 
   // Try to fetch existing profile
   // Note: Only select columns that are guaranteed to exist in the schema
@@ -86,6 +89,9 @@ export async function getOrCreateProfile(user) {
 
 export async function getMyReferrals(userId) {
   const supabase = await createClient();
+  if (!supabase) {
+    return [];
+  }
 
   const { data, error } = await supabase
     .from("referrals")

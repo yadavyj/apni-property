@@ -6,6 +6,9 @@ const getCachedActiveHomeTestimonials = unstable_cache(
   async function fetchActiveHomeTestimonials() {
     return withSupabaseTimeout(async () => {
       const supabase = createPublicClient();
+      if (!supabase) {
+        return [];
+      }
 
       const { data, error } = await supabase
         .from("home_testimonials")
@@ -33,6 +36,9 @@ export async function getActiveHomeTestimonials() {
 
 export async function getAllHomeTestimonials() {
   const supabase = createAdminClient();
+  if (!supabase) {
+    return [];
+  }
 
   const { data, error } = await supabase
     .from("home_testimonials")
