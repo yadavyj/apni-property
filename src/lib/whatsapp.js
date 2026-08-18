@@ -19,14 +19,33 @@ export function buildWhatsAppShareLink(message) {
 }
 
 export function buildPropertyWhatsAppLink(property, pageUrl, phone) {
-  const lines = [
-    `Hi, I'm interested in this property:`,
-    property.title,
-    `Location: ${property.location_area}, ${property.location_city}`,
-    `Area: ${formatArea(property.area_sqft)}`,
-    `Rate: ${formatCurrency(property.rate_per_sqft)}/sqft`,
-    pageUrl ? pageUrl : null,
-  ].filter(Boolean);
+  const lines = ["Hi, I'm interested in this property:"];
+
+  const title = property?.title?.trim();
+  if (title) {
+    lines.push(`Property: ${title}`);
+  }
+
+  const location = [property?.location_area, property?.location_city]
+    .filter((value) => typeof value === "string" && value.trim())
+    .join(", ");
+  if (location) {
+    lines.push(`Location: ${location}`);
+  }
+
+  const area = property?.area_sqft != null ? formatArea(property.area_sqft) : null;
+  if (area && area !== "-") {
+    lines.push(`Area: ${area}`);
+  }
+
+  const rate = property?.rate_per_sqft != null ? `${formatCurrency(property.rate_per_sqft)}/sqft` : null;
+  if (rate && rate !== "-/sqft") {
+    lines.push(`Rate: ${rate}`);
+  }
+
+  if (pageUrl) {
+    lines.push(`Property URL: ${pageUrl}`);
+  }
 
   return buildWhatsAppLink(lines.join("\n"), phone);
 }
