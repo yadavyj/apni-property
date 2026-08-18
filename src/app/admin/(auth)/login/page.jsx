@@ -23,19 +23,34 @@ export default function AdminLoginPage() {
     setError("");
     setLoading(true);
 
-    const result = await adminLogin({ email, password });
+    try {
+      const response = await fetch("/api/admin/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email, password }),
+      });
 
-    setLoading(false);
+      const result = await response.json().catch(() => ({ success: false, error: "Unable to sign in right now." }));
 
-    if (!result.success) {
-      setError(result.error || "Invalid email or password.");
-      toast.error(result.error || "Invalid email or password.");
-      return;
+      if (!response.ok || !result.success) {
+        const message = result.error || "Invalid email or password.";
+        setError(message);
+        toast.error(message);
+        return;
+      }
+
+      toast.success("Welcome back!");
+      router.push("/admin/dashboard");
+      router.refresh();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unable to sign in right now.";
+      setError(message);
+      toast.error(message);
+    } finally {
+      setLoading(false);
     }
-
-    toast.success("Welcome back!");
-    router.push("/admin/dashboard");
-    router.refresh();
   }
 
   return (

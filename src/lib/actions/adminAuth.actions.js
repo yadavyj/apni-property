@@ -11,28 +11,47 @@ import {
 import { hashPassword, verifyPassword } from "@/lib/adminAuth/password";
 
 export async function adminLogin({ email, password }) {
-  const supabase = createAdminClient();
+  try {
+    const supabase = createAdminClient();
+    if (!supabase) {
+      return { success: false, error: "Admin authentication is not configured." };
+    }
 
-  const { data: admin } = await supabase
-    .from("admin_users")
-    .select("id, email, password_hash")
-    .eq("email", email.trim().toLowerCase())
-    .maybeSingle();
+    const normalizedEmail = typeof email === "string" ? email.trim().toLowerCase() : "";
+    if (!normalizedEmail || !password) {
+      return { success: false, error: "Email and password are required." };
+    }
 
-  if (!admin) {
-    return { success: false, error: "Invalid email or password." };
+    const { data: admin, error } = await supabase
+      .from("admin_users")
+      .select("id, email, password_hash")
+      .eq("email", normalizedEmail)
+      .maybeSingle();
+
+    if (error) {
+      return { success: false, error: "Unable to sign in right now." };
+    }
+
+    if (!admin) {
+      return { success: false, error: "Invalid email or password." };
+    }
+
+    const valid = await verifyPassword(password, admin.password_hash);
+    if (!valid) {
+      return { success: false, error: "Invalid email or password." };
+    }
+
+    const token = await signAdminToken({ id: admin.id, email: admin.email });
+    const cookieStore = await cookies();
+    cookieStore.set(ADMIN_SESSION_COOKIE, token, ADMIN_SESSION_COOKIE_OPTIONS);
+
+    return { success: true };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? "Unable to sign in right now." : "Invalid email or password.",
+    };
   }
-
-  const valid = await verifyPassword(password, admin.password_hash);
-  if (!valid) {
-    return { success: false, error: "Invalid email or password." };
-  }
-
-  const token = await signAdminToken({ id: admin.id, email: admin.email });
-  const cookieStore = await cookies();
-  cookieStore.set(ADMIN_SESSION_COOKIE, token, ADMIN_SESSION_COOKIE_OPTIONS);
-
-  return { success: true };
 }
 
 export async function adminLogout() {
