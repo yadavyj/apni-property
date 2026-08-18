@@ -6,12 +6,11 @@ import PropertyCardGallery from "@/components/property/PropertyCardGallery";
 import { BUSINESS, categoryLabel, registryStatusLabel } from "@/lib/constants";
 import { formatArea, formatCompactCurrency, formatRate } from "@/lib/format";
 import { getPropertyImages } from "@/lib/media";
-import { buildPropertyWhatsAppLink } from "@/lib/whatsapp";
 
 export default function PropertyCard({ property, hideEmi }) {
   const images = getPropertyImages(property);
-  const pageUrl = `${BUSINESS.siteUrl}/properties/${property.slug}`;
   const propertyHref = `/properties/${property.slug}`;
+  const whatsappHref = `https://wa.me/${BUSINESS.whatsappNumber}`;
 
   return (
     <div className="group relative p-[1px] flex flex-col h-full overflow-hidden rounded-[24px] bg-white/10 transition-all duration-500 hover:bg-linear-to-br hover:from-brand-400 hover:via-purple-500 hover:to-accent-400 hover:shadow-[0_20px_50px_rgba(139,92,246,0.35)] hover:-translate-y-1.5 min-w-0">
@@ -117,7 +116,7 @@ export default function PropertyCard({ property, hideEmi }) {
             </Button>
             
             <Button
-              href={buildPropertyWhatsAppLink(property, pageUrl)}
+              href={whatsappHref}
               target="_blank"
               rel="noopener noreferrer"
               variant="whatsapp"
