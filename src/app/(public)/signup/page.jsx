@@ -15,6 +15,7 @@ export default function SignupPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const referralFromUrl = searchParams.get("ref")?.trim().toUpperCase() || "";
+  const guestReferralToken = searchParams.get("guest_token")?.trim() || "";
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
@@ -32,6 +33,7 @@ export default function SignupPage() {
       fullName,
       phone,
       referralCode: referralFromUrl,
+      guestReferralToken,
     });
 
     if (!signupResult.success) {

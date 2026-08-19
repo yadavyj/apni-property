@@ -1,5 +1,6 @@
 const REFERRAL_COOKIE = "apni_ref";
 const REFERRAL_LOCAL_KEY = "apni_ref_key";
+export const GUEST_REFERRAL_COOKIE = "apni_guest_referral_token";
 const REFERRAL_COOKIE_DAYS = 30;
 
 function normalizeReferral(code) {
@@ -54,4 +55,20 @@ export function clearReferralCookie() {
   } catch {
     // ignore storage access issues
   }
+}
+
+export function storeGuestReferralToken(token) {
+  const cleaned = typeof token === "string" ? token.trim() : "";
+  if (typeof document === "undefined" || !cleaned) return false;
+
+  const maxAge = REFERRAL_COOKIE_DAYS * 24 * 60 * 60;
+  document.cookie = `${GUEST_REFERRAL_COOKIE}=${encodeURIComponent(cleaned)}; path=/; max-age=${maxAge}; SameSite=Lax`;
+  return true;
+}
+
+export function readGuestReferralToken() {
+  if (typeof document === "undefined") return null;
+
+  const match = document.cookie.match(new RegExp(`(?:^|; )${GUEST_REFERRAL_COOKIE}=([^;]*)`));
+  return match ? decodeURIComponent(match[1]) : null;
 }

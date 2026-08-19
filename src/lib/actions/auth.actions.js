@@ -3,6 +3,12 @@
 import { randomUUID } from "crypto";
 import { createAdminClient } from "@/lib/supabase/server";
 import { REWARD_VALUES } from "@/lib/constants";
+import {
+  claimGuestReferralSession,
+  recordGuestReferralSignup,
+} from "@/lib/actions/guestReferral.actions";
+import { GUEST_REFERRAL_COOKIE } from "@/lib/referral";
+import { cookies } from "next/headers";
 
 function normalizeCode(code) {
   return typeof code === "string" ? code.trim().toUpperCase() : "";
@@ -22,7 +28,14 @@ async function generateUniqueReferralCode(admin, attempts = 0) {
   return candidate;
 }
 
-export async function adminCreateUser({ email, password, fullName, phone, referralCode }) {
+export async function adminCreateUser({
+  email,
+  password,
+  fullName,
+  phone,
+  referralCode,
+  guestReferralToken,
+}) {
   try {
     const supabaseAdmin = createAdminClient();
     const normalizedRef = normalizeCode(referralCode);
@@ -73,6 +86,14 @@ export async function adminCreateUser({ email, password, fullName, phone, referr
     if (profileError) {
       return { success: false, error: profileError.message };
     }
+
+    const cookieStore = await cookies();
+    const token = guestReferralToken || cookieStore.get(GUEST_REFERRAL_COOKIE)?.value;
+    if (token) {
+      await recordGuestReferralSignup({ token, referredUserId: user.id });
+    }
+
+    await claimGuestReferralSession(user.id);
 
     if (referrerProfile && referrerProfile.id !== user.id) {
       const { error: referralError } = await supabaseAdmin.from("referrals").upsert(

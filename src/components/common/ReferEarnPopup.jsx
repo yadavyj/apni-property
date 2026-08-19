@@ -5,6 +5,7 @@ import { usePathname, useSearchParams } from "next/navigation";
 import { ArrowRight, BadgeCheck, Gift, Sparkles, Trophy } from "lucide-react";
 import Modal from "@/components/ui/Modal";
 import Button from "@/components/ui/Button";
+import GuestReferralShare from "@/components/common/GuestReferralShare";
 import { usePublicAuth } from "@/components/providers/PublicAuthProvider";
 
 const POPUP_DELAY_MS = 2000;
@@ -36,9 +37,6 @@ export default function ReferEarnPopup() {
   function handleClose() {
     setOpen(false);
   }
-
-  const ctaHref = user ? "/dashboard" : "/refer-earn";
-  const ctaLabel = user ? "View My Referrals" : "Get My Referral Link";
 
   return (
     <Modal
@@ -94,16 +92,23 @@ export default function ReferEarnPopup() {
           </div>
 
           <div className="flex w-full flex-col gap-2 pt-1 sm:flex-row sm:gap-2.5">
-            <Button
-              href={ctaHref}
-              variant="accent"
-              size="lg"
-              onClick={handleClose}
-              className="w-full whitespace-nowrap rounded-xl font-bold"
-            >
-              {ctaLabel}
-              <ArrowRight className="h-4 w-4" />
-            </Button>
+            {user ? (
+              <Button
+                href="/dashboard"
+                variant="accent"
+                size="lg"
+                onClick={handleClose}
+                className="w-full whitespace-nowrap rounded-xl font-bold"
+              >
+                View My Referrals
+                <ArrowRight className="h-4 w-4" />
+              </Button>
+            ) : (
+              <GuestReferralShare
+                label="Get My Referral Link"
+                className="w-full whitespace-nowrap rounded-xl font-bold"
+              />
+            )}
             <Button
               href="/refer-earn"
               variant="outline"

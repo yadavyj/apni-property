@@ -6,21 +6,49 @@ import { Check, Copy, Share2, Heart, AlertCircle } from "lucide-react";
 import Container from "@/components/layout/Container";
 import Button from "@/components/ui/Button";
 import Reveal from "@/components/common/Reveal";
+import WhatsAppIcon from "@/components/common/WhatsAppIcon";
 import { BUSINESS } from "@/lib/constants";
+import { buildWhatsAppShareLink } from "@/lib/whatsapp";
+import { validateGuestReferralToken } from "@/lib/actions/guestReferral.actions";
 
 export default function ShareReferralPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const referralCode = searchParams.get("code");
+  const guestToken = searchParams.get("guest_token");
 
   const [copied, setCopied] = useState(false);
+  const [guestValid, setGuestValid] = useState(guestToken ? null : false);
   const [socials, setSocials] = useState({
     instagram: false,
     facebook: false,
   });
 
-  const referralLink = referralCode 
-    ? `${typeof window !== "undefined" ? window.location.origin : ""}/properties?ref=${referralCode}`
+  useEffect(() => {
+    let active = true;
+
+    if (!guestToken) {
+      return () => {
+        active = false;
+      };
+    }
+
+    validateGuestReferralToken(guestToken).then((valid) => {
+      if (active) setGuestValid(valid);
+    });
+
+    return () => {
+      active = false;
+    };
+  }, [guestToken]);
+
+  const referralLink = guestToken
+    ? `${typeof window !== "undefined" ? window.location.origin : ""}/share-referral?guest_token=${encodeURIComponent(guestToken)}`
+    : referralCode
+      ? `${typeof window !== "undefined" ? window.location.origin : ""}/properties?ref=${referralCode}`
+      : null;
+  const whatsappShareLink = referralLink
+    ? buildWhatsAppShareLink(`Join me on Apni Property and explore verified properties:\n${referralLink}`)
     : null;
 
   async function handleCopyLink() {
@@ -71,7 +99,7 @@ export default function ShareReferralPage() {
     }
   }
 
-  if (!referralCode) {
+  if (!referralCode && !guestToken) {
     return (
       <div className="min-h-screen bg-slate-950/10 flex items-center justify-center py-16">
         <Container>
@@ -95,6 +123,37 @@ export default function ShareReferralPage() {
     );
   }
 
+  if (guestToken && guestValid === null) {
+    return (
+      <div className="min-h-screen bg-slate-950/10 flex items-center justify-center py-16">
+        <Container>
+          <p className="text-center text-sm text-slate-400">Validating referral link...</p>
+        </Container>
+      </div>
+    );
+  }
+
+  if (guestToken && !guestValid) {
+    return (
+      <div className="min-h-screen bg-slate-950/10 flex items-center justify-center py-16">
+        <Container>
+          <Reveal>
+            <div className="rounded-3xl border border-red-500/30 bg-red-500/10 p-8 text-center">
+              <div className="flex items-center justify-center gap-3 mb-4">
+                <AlertCircle className="h-6 w-6 text-red-400" />
+                <h1 className="text-2xl font-bold text-red-300">Referral Link Expired</h1>
+              </div>
+              <p className="text-red-200 mb-6">This temporary referral link is no longer active.</p>
+              <Button href="/refer-earn" className="rounded-2xl font-bold py-2.5 px-6">
+                Refer &amp; Earn
+              </Button>
+            </div>
+          </Reveal>
+        </Container>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-slate-950/10 py-16">
       <Container>
@@ -107,7 +166,7 @@ export default function ShareReferralPage() {
                   🔗 Exclusive Referral Link
                 </span>
                 <h1 className="text-4xl sm:text-5xl font-black text-white mb-3">
-                  Your Friend's Exclusive Property Link
+                  Your Friend&apos;s Exclusive Property Link
                 </h1>
                 <p className="text-lg text-slate-300">
                   Browse verified property listings and start your journey with Apni Property. Your friend gets bonus points when you complete a deal!
@@ -136,12 +195,33 @@ export default function ShareReferralPage() {
 
               {/* CTA Buttons */}
               <div className="flex flex-col gap-3">
+                {whatsappShareLink && (
+                  <Button
+                    href={whatsappShareLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    variant="whatsapp"
+                    className="w-full rounded-2xl font-bold py-3 text-base shadow-lg"
+                  >
+                    <WhatsAppIcon className="h-5 w-5" />
+                    Share on WhatsApp
+                  </Button>
+                )}
                 <Button
-                  href="/properties"
+                  href={guestToken ? `/properties?guest_token=${encodeURIComponent(guestToken)}` : "/properties"}
                   className="w-full bg-linear-to-r from-brand-500 to-purple-500 text-white rounded-2xl font-bold py-3 text-base shadow-lg hover:shadow-xl transition-all"
                 >
                   Browse Properties
                 </Button>
+                {guestToken && (
+                  <Button
+                    href={`/signup?guest_token=${encodeURIComponent(guestToken)}`}
+                    variant="outline"
+                    className="w-full rounded-2xl font-bold py-3 text-base"
+                  >
+                    Create an Account Later
+                  </Button>
+                )}
               </div>
             </div>
           </Reveal>
@@ -155,7 +235,7 @@ export default function ShareReferralPage() {
 
               <div className="flex flex-col gap-4">
                 <p className="text-sm text-slate-300">
-                  Your referrer gets extra bonus points when you follow their social media. It's a way to show appreciation!
+                  Your referrer gets extra bonus points when you follow their social media. It&apos;s a way to show appreciation!
                 </p>
 
                 {/* Instagram */}
