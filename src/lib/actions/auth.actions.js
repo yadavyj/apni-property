@@ -90,7 +90,12 @@ export async function adminCreateUser({
     const cookieStore = await cookies();
     const token = guestReferralToken || cookieStore.get(GUEST_REFERRAL_COOKIE)?.value;
     if (token) {
-      await recordGuestReferralSignup({ token, referredUserId: user.id });
+      await recordGuestReferralSignup({
+        token,
+        referredUserId: user.id,
+        referredName: fullName,
+        referredPhone: phone,
+      });
     }
 
     await claimGuestReferralSession(user.id);

@@ -4,7 +4,6 @@ import { createHash, randomBytes } from "crypto";
 import { cookies } from "next/headers";
 import { getSiteUrl } from "@/lib/getSiteUrl";
 import { createAdminClient } from "@/lib/supabase/server";
-import { REWARD_VALUES } from "@/lib/constants";
 
 const CLAIM_COOKIE = "apni_guest_referral_claim";
 const SESSION_TTL_SECONDS = 30 * 24 * 60 * 60;
@@ -69,7 +68,7 @@ export async function validateGuestReferralToken(token) {
   return Boolean(await getActiveSessionByShareToken(token));
 }
 
-export async function recordGuestReferralSignup({ token, referredUserId }) {
+export async function recordGuestReferralSignup({ token, referredUserId, referredName, referredPhone }) {
   if (!isUsableToken(token) || typeof referredUserId !== "string" || !referredUserId) {
     return { recorded: false };
   }
@@ -91,6 +90,8 @@ export async function recordGuestReferralSignup({ token, referredUserId }) {
   const { error } = await admin.from("guest_referral_events").insert({
     session_id: session.id,
     referred_user_id: referredUserId,
+    referred_name: typeof referredName === "string" ? referredName.trim() : null,
+    referred_phone: typeof referredPhone === "string" ? referredPhone.trim() : null,
     event_type: "signup",
     status: "pending",
   });
@@ -113,7 +114,6 @@ export async function claimGuestReferralSession(profileId) {
   const { data, error } = await admin.rpc("claim_guest_referral_session", {
     p_claim_token_hash: hashToken(claimToken),
     p_profile_id: profileId,
-    p_reward_points: REWARD_VALUES.referralSignup,
   });
 
   if (error) {

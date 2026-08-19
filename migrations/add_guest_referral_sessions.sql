@@ -2,7 +2,7 @@
 -- Purpose: Let guests share a referral invitation before creating an account.
 
 CREATE TABLE IF NOT EXISTS public.guest_referral_sessions (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   share_token_hash TEXT NOT NULL UNIQUE,
   claim_token_hash TEXT NOT NULL UNIQUE,
   created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
@@ -16,9 +16,11 @@ CREATE INDEX IF NOT EXISTS idx_guest_referral_sessions_expires_at
   ON public.guest_referral_sessions(expires_at);
 
 CREATE TABLE IF NOT EXISTS public.guest_referral_events (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   session_id UUID NOT NULL REFERENCES public.guest_referral_sessions(id) ON DELETE CASCADE,
   referred_user_id UUID REFERENCES public.profiles(id) ON DELETE SET NULL,
+  referred_name TEXT,
+  referred_phone TEXT,
   event_type TEXT NOT NULL CHECK (event_type IN ('signup')),
   status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'converted')),
   created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
@@ -28,18 +30,6 @@ CREATE TABLE IF NOT EXISTS public.guest_referral_events (
 CREATE UNIQUE INDEX IF NOT EXISTS idx_guest_referral_events_signup_once
   ON public.guest_referral_events(session_id, referred_user_id, event_type)
   WHERE referred_user_id IS NOT NULL;
-
--- Guest referral rows have no referral_code until a real profile claims the session.
-ALTER TABLE public.referrals
-  ALTER COLUMN referral_code DROP NOT NULL;
-
-ALTER TABLE public.referrals
-  ADD COLUMN IF NOT EXISTS guest_session_id UUID
-  REFERENCES public.guest_referral_sessions(id) ON DELETE SET NULL;
-
-CREATE UNIQUE INDEX IF NOT EXISTS idx_referrals_guest_session_user
-  ON public.referrals(guest_session_id, referred_user_id)
-  WHERE guest_session_id IS NOT NULL;
 
 ALTER TABLE public.guest_referral_sessions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.guest_referral_events ENABLE ROW LEVEL SECURITY;
@@ -51,8 +41,7 @@ GRANT ALL ON public.guest_referral_events TO service_role;
 
 CREATE OR REPLACE FUNCTION public.claim_guest_referral_session(
   p_claim_token_hash TEXT,
-  p_profile_id UUID,
-  p_reward_points INTEGER
+  p_profile_id UUID
 )
 RETURNS JSONB
 LANGUAGE plpgsql
@@ -95,55 +84,21 @@ BEGIN
        AND event_row.referred_user_id <> p_profile_id THEN
       INSERT INTO public.referrals (
         referrer_id,
-        referred_user_id,
-        referral_code,
-        guest_session_id,
+        lead_id,
+        property_id,
         referred_name,
+        referred_phone,
         status,
-        reward_points,
-        rewarded_at,
         created_at
-      )
-      SELECT
+      ) VALUES (
         p_profile_id,
-        event_row.referred_user_id,
         NULL,
-        session_row.id,
-        profile.full_name,
-        'confirmed',
-        GREATEST(COALESCE(p_reward_points, 0), 0),
-        CASE WHEN COALESCE(p_reward_points, 0) > 0 THEN NOW() ELSE NULL END,
+        NULL,
+        event_row.referred_name,
+        event_row.referred_phone,
+        'pending',
         NOW()
-        FROM public.profiles AS profile
-       WHERE profile.id = event_row.referred_user_id
-      ON CONFLICT DO NOTHING;
-
-      IF FOUND AND COALESCE(p_reward_points, 0) > 0 THEN
-        INSERT INTO public.reward_transactions (
-          user_id,
-          reward_type,
-          points,
-          reference_id,
-          details,
-          created_at
-        ) VALUES (
-          p_profile_id,
-          'referral_signup',
-          p_reward_points,
-          event_row.id::TEXT,
-          jsonb_build_object('guestSessionId', session_row.id, 'referredUserId', event_row.referred_user_id),
-          NOW()
-        )
-        ON CONFLICT (user_id, reward_type, reference_id) DO NOTHING;
-
-        UPDATE public.profiles
-           SET points_balance = (
-             SELECT COALESCE(SUM(points), 0)
-               FROM public.reward_transactions
-              WHERE user_id = p_profile_id
-           )
-         WHERE id = p_profile_id;
-      END IF;
+      );
 
       converted_count := converted_count + 1;
     END IF;
@@ -161,7 +116,7 @@ BEGIN
 END;
 $$;
 
-REVOKE ALL ON FUNCTION public.claim_guest_referral_session(TEXT, UUID, INTEGER)
+REVOKE ALL ON FUNCTION public.claim_guest_referral_session(TEXT, UUID)
   FROM PUBLIC, anon, authenticated;
-GRANT EXECUTE ON FUNCTION public.claim_guest_referral_session(TEXT, UUID, INTEGER)
+GRANT EXECUTE ON FUNCTION public.claim_guest_referral_session(TEXT, UUID)
   TO service_role;
