@@ -37,7 +37,7 @@ export default function ReferEarnPopup() {
     setOpen(false);
   }
 
-  const ctaHref = user ? "/dashboard" : "/signup";
+  const ctaHref = user ? "/dashboard" : "/refer-earn";
   const ctaLabel = user ? "View My Referrals" : "Get My Referral Link";
 
   return (

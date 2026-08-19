@@ -10,7 +10,7 @@ export default function ReferEarnActions() {
   return (
     <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
       <Button
-        href={user ? "/dashboard" : "/signup"}
+        href={user ? "/dashboard" : "/refer-earn"}
         variant="accent"
         size="lg"
         className="rounded-xl shadow-lg shadow-accent-500/25 transition-all duration-300 hover:shadow-xl hover:shadow-accent-500/35"

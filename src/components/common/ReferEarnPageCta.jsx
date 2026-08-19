@@ -8,7 +8,7 @@ export default function ReferEarnPageCta({ guestLabel, className }) {
 
   return (
     <Button
-      href={user ? "/dashboard" : "/signup"}
+      href={user ? "/dashboard" : "/refer-earn"}
       variant="accent"
       size="lg"
       className={className}
